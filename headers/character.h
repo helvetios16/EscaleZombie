@@ -271,7 +271,7 @@ class character_factory {
 };
 character_factory::character_factory(){
     texture_for_one.loadFromFile("resources/imgP1.png");
-    texture_for_two.loadFromFile("resources/imgP1.png");
+    texture_for_two.loadFromFile("resources/imgP2.png");
     prototypes["Personaje1"] = std::make_unique<character_one>(sf::Vector2f(580.0f, 760.0f),texture_for_one);
     prototypes["Personaje2"] = std::make_unique<character_two>(sf::Vector2f(540.0f, 760.0f),texture_for_two);
 }
