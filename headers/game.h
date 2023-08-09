@@ -38,29 +38,33 @@ private:
     sf::Clock player_one_shoot_clock;
     sf::Clock player_two_shoot_clock;
 
-    std::vector<sf::Texture> gitFrames;
-    sf::Texture frame;
-    int current;
-    bool showgif = true;
-
-    sf::Texture staticImageTexture;
-    sf::Sprite staticImageSprite;
-
-    //Para que funcione la seleccion de la numero de jugadores
-    sf::RectangleShape button_1Player;
-    bool showImage1P = true;
-    sf::RectangleShape button_2Player;
-    bool showImage2P = true;
-    sf::Sprite spriteInImg;
-    sf::Time elapsed;
-    int currentFrame = 0;
-    const sf::Time frameInterval = sf::seconds(0.3f);
-
     sf::Clock clock;
 
     void init_window();
 
     Horder horde;
+
+    //-----------------------implementacion inicio de juego ------------------------------
+    sf::Texture fondoJuego;
+    bool showGif = true;
+    sf::Sprite fondoJuegoSp;
+    sf::Texture staticImageTexture;
+    sf::Sprite staticImageSprite;
+    //Seleccion de jugadores
+    sf::RectangleShape button_1Player;
+    bool showImage1P = false;
+    sf::RectangleShape button_2Player;
+    bool showImage2P = false;
+    //Estado de juego
+    bool showMainMenu = true; //Inicio
+    bool showPlayerSelect = false; //Seleccion
+    bool gameStarted = false; //Comenzo
+    //-----------------------------------------------------
+
+    bool one = true;
+
+    //implementacion singleton
+    static Games* instance;
 
 public:
     Games();
@@ -71,16 +75,14 @@ public:
     void render();
     void run();
 
-    void move(float dt) {
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-            shape.move(-movement * dt, 0.f);
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-            shape.move(movement * dt, 0.f);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-            shape.move(0.f, -movement * dt);
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-            shape.move(0.f, movement * dt);
+    static Games* getInstance(){
+        // Método para acceder a la instancia única
+        if (instance == nullptr) {
+            instance = new Games();
+        }
+        return instance;
     }
+
 };
 
 void Games::init_window() {
@@ -123,21 +125,21 @@ Games::Games() : horde() {
     player_two = factory.create_character("Personaje2");
 
     //--------------------------------------------
-    staticImageTexture.loadFromFile("resources/selectPlayer1.png");
+    //imagen 1 de inicio
+    fondoJuego.loadFromFile("resources/Frame1.png");
+    fondoJuegoSp.setTexture(fondoJuego);
+    fondoJuegoSp.setScale(2,2);
+    //imagen 2 de inicio
+    staticImageTexture.loadFromFile("resources/selectPlayer.png");
     staticImageSprite.setTexture(staticImageTexture);
-
-    for(int i=1;i<=4;i++){
-        frame.loadFromFile("resources/FrameI" + std::to_string(i) + ".png");
-        gitFrames.push_back(frame);
-    }
-
-    button_1Player.setSize(sf::Vector2f(644.0f, 490.0f));
-    button_1Player.setPosition(92.0f, 320.0f);
-    button_1Player.setFillColor(sf::Color::Green);
-
-    button_2Player.setSize(sf::Vector2f(644.0f, 490.0f));
-    button_2Player.setPosition(862.0f, 320.0f);
-    button_2Player.setFillColor(sf::Color::Green);
+    staticImageSprite.setScale(2,2);
+    //botones (rectangulos) para seleccionar
+    button_1Player.setSize(sf::Vector2f(644.0f,490.0f));
+    button_1Player.setPosition(92.0f,320.0f);
+    button_1Player.setFillColor(sf::Color::Red);
+    button_2Player.setSize(sf::Vector2f(644.0f,490.0f));
+    button_2Player.setPosition(862.0f,320.0f);
+    button_2Player.setFillColor(sf::Color::Blue);
     //----------------------------------------
 }
 
@@ -146,18 +148,7 @@ void Games::poll_events() {
         if (this->event_sfml.type == sf::Event::Closed) {
             this->window->close();
         } 
-        if (this->event_sfml.type == sf::Event::MouseButtonPressed && this->event_sfml.mouseButton.button == sf::Mouse::Left) {
-            sf::Vector2f mousePos = this->window->mapPixelToCoords(sf::Mouse::getPosition(*(this->window)));
-
-            if (button_1Player.getGlobalBounds().contains(mousePos)) {
-                showImage1P = true;
-            } else if (button_2Player.getGlobalBounds().contains(mousePos)) {
-                showImage2P = true;
-            }
-        }
-
-
-        else if (this->event_sfml.type == sf::Event::KeyPressed) {
+        if (this->event_sfml.type == sf::Event::KeyPressed) {
             if (this->event_sfml.key.code == sf::Keyboard::Escape) {
                 this->window->close();
             } else if (this->event_sfml.key.code == sf::Keyboard::Q) {
@@ -165,7 +156,12 @@ void Games::poll_events() {
             } else if (this->event_sfml.key.code == sf::Keyboard::Enter) {
                 player_two_shooting = true;
             } else if (this->event_sfml.key.code == sf::Keyboard::Space) {
-                   showgif = !showgif;
+                if (showMainMenu) {
+                    showMainMenu = false;
+                    showPlayerSelect = true;
+                } else if (showPlayerSelect) {
+                   showPlayerSelect = false;
+               }
             }
 
         } else if (this->event_sfml.type == sf::Event::KeyReleased) {
@@ -173,11 +169,25 @@ void Games::poll_events() {
                 player_one_shooting = false;
             } else if (this->event_sfml.key.code == sf::Keyboard::Enter) {
                 player_two_shooting = false;
+            } 
+
+        } else if (!gameStarted) {
+            if (this->event_sfml.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2f mousePosition(this->event_sfml.mouseButton.x, this->event_sfml.mouseButton.y);
+                if (button_1Player.getGlobalBounds().contains(mousePosition)) {
+                    showImage1P = true;  //determina si es 1 jugador
+                    showImage2P = false;
+                    gameStarted = true;
+                } else if (button_2Player.getGlobalBounds().contains(mousePosition)) {
+                    showImage1P = false;
+                    showImage2P = true;  //determina si son 2 jugadores
+                    gameStarted = true;
+                }
             }
         }
-    }
-}
 
+    } 
+}
 void Games::update() {
     this->poll_events();
     sf::Time elapsedTime = player_one_shoot_clock.getElapsedTime();
@@ -207,17 +217,7 @@ void Games::update() {
     }
     bullet::removeInactiveBullets(bullets, window);
 
-    //------------------------------------------
-    // Actualizar el temporizador y cambiar de cuadro
-    elapsed = clock.getElapsedTime();
-    if (elapsed >= frameInterval) {
-        currentFrame = (currentFrame + 1)  % gitFrames.size();
-        clock.restart();
-    }
-     //-----------------------------------
 }
-
-
 
 void Games::render() {
     sf::Time deltaTime = clock.restart();
@@ -232,44 +232,40 @@ void Games::render() {
     this->window->clear();
 
     //----------------------------
-    //aqui deberia crear el fondo y todos los personajes
-       
-       if (showImage1P || showImage2P) {
-            this->window->draw(background_one_sprite);
-            //horder.draw_one(window);
+    //aqui crea el fondo y todos los personajes
+    if ( showMainMenu ) {
+            this->window->draw(fondoJuegoSp);
+       }
+       if ( showPlayerSelect ) {
+            this->window->draw(staticImageSprite);
+            //this->window->draw(button_1Player);
+            //this->window->draw(button_2Player);
+       }
+       if ( gameStarted ) {
+            this->window->draw(background_one_sprite); //mapa
             player_one->draw(window);
+
+            for (auto& b : bullets) { b.draw(); }
+            horde.call(window,1,5);
+            horde.approximate(*player_one->getSprite(),1,dt);
+            horde.approximate(*player_two->getSprite(),1,dt);
+            horde.collision(walls,1,dt);
+
             if (showImage2P) {
                 player_two->draw(window);
-                //balaP2->draw(window);
             }
        }
-
-       //aqui decide si dibujar el gif o la img para seleccionar
-       if (showgif) {
-           spriteInImg.setTexture(gitFrames[currentFrame]);
-           this->window->draw(spriteInImg);
-       } else {
-           this->window->draw(staticImageSprite);
-       }
-
-    //-----------------------------------
-
-    this->window->draw(background_one_sprite);
-
-    player_one->draw(window);
-    player_two->draw(window);
-
-    /*for(const auto& b : walls){
-        window->draw(b.getShape());
-    }*/
     
-    for (auto& b : bullets) {
-        b.draw();
+    if(horde.endGame(*player_one->getSprite()) || horde.endGame(*player_two->getSprite())){
+        std::cout<<"End Game"<<std::endl;
+        this->window->close();
     }
-    
-    horde.draw(window,2,25);
-    horde.approximate(*player_one->getSprite(),1,dt);
-    horde.collision(walls,1,dt,20);
+    int n = horde.getCodex();
+    std::cout<<n<<std::endl;
+    if(n == 50){
+        std::cout<<"You win, you will can past the hordes of zombies"<<std::endl; 
+        this->window->close();
+    }
 
     this->window->display();
 }
