@@ -28,6 +28,7 @@ class Zombie {
         virtual sf::FloatRect getGlobal() const = 0;
         virtual void recibirdamage(int dam) = 0;
         virtual int getVida() = 0;
+        virtual bool end(sf::Sprite& sprite) = 0;
 };
 
 class NormalZombie : public Zombie {
@@ -50,6 +51,7 @@ class NormalZombie : public Zombie {
         sf::FloatRect getGlobal() const;
         void recibirdamage(int dam) override;
         int getVida() override;
+        bool end(sf::Sprite& sprite) override;
 };
 
 NormalZombie::NormalZombie() {
@@ -195,6 +197,14 @@ void NormalZombie::recibirdamage(int dam){
 int NormalZombie::getVida(){
     return vida;
 }
+bool NormalZombie::end(sf::Sprite& shape){
+    sf::FloatRect person =  shape.getGlobalBounds();
+    sf::FloatRect ali = sprite.getGlobalBounds();
+    if(shape.getGlobalBounds().intersects(ali)){
+        return true;
+    }
+    return false;
+}
 
 class FastZombie : public Zombie {
     private:
@@ -216,6 +226,7 @@ class FastZombie : public Zombie {
         sf::FloatRect getGlobal() const;
         void recibirdamage(int dam) override;
         int getVida() override;
+        bool end(sf::Sprite& sprite) override;
 };
 
 FastZombie::FastZombie() {
@@ -361,6 +372,14 @@ void FastZombie::recibirdamage(int dam){
 int FastZombie::getVida(){
     return vida;
 }
+bool FastZombie::end(sf::Sprite& shape){
+    sf::FloatRect person =  shape.getGlobalBounds();
+    sf::FloatRect ali = sprite.getGlobalBounds();
+    if(shape.getGlobalBounds().intersects(ali)){
+        return true;
+    }
+    return false;
+}
 
 class StrongZombie : public Zombie {
     private:
@@ -382,6 +401,7 @@ class StrongZombie : public Zombie {
         sf::FloatRect getGlobal() const;
         void recibirdamage(int dam) override;
         int getVida() override;
+        bool end(sf::Sprite& sprite) override;
 };
 
 StrongZombie::StrongZombie() {
@@ -526,4 +546,12 @@ void StrongZombie::recibirdamage(int dam){
 }
 int StrongZombie::getVida(){
     return vida;
+}
+bool StrongZombie::end(sf::Sprite& shape){
+    sf::FloatRect person =  shape.getGlobalBounds();
+    sf::FloatRect ali = sprite.getGlobalBounds();
+    if(shape.getGlobalBounds().intersects(ali)){
+        return true;
+    }
+    return false;
 }
